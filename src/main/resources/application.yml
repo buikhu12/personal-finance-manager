@@ -4,19 +4,23 @@ server:
 spring:
   datasource:
     url: ${DB_URL:jdbc:h2:file:./data/finance_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-    driver-class-name: org.h2.Driver
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
     username: ${DB_USERNAME:sa}
     password: ${DB_PASSWORD:}
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: false
-    database-platform: org.hibernate.dialect.H2Dialect
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: ${JPA_SHOW_SQL:false}
+    database-platform: ${JPA_DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
+    properties:
+      hibernate:
+        format_sql: ${JPA_FORMAT_SQL:false}
   h2:
     console:
-      enabled: true
+      enabled: ${H2_CONSOLE_ENABLED:true}
+      path: /h2-console
 
 logging:
   level:
-    org.springframework.security: WARN
-    org.hibernate.SQL: WARN
+    org.springframework.security: ${LOG_SECURITY:WARN}
+    org.hibernate.SQL: ${LOG_SQL:WARN}

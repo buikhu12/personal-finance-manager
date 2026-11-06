@@ -36,3 +36,8 @@ build/
 data/
 *.db
 *.trace.db
+
+### Environment Files ###
+.env
+.env.local
+!.env.example
