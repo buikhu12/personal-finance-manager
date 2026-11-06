@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,13 @@ public class SavingsGoalController {
     public ResponseEntity<GoalResponse> update(@PathVariable Long id,
                                                @Valid @RequestBody GoalRequest request, Principal principal) {
         return ResponseEntity.ok(service.update(id, request, principal));
+    }
+
+    @PostMapping("/{id}/contribute")
+    public ResponseEntity<GoalResponse> contribute(@PathVariable Long id,
+                                                   @RequestParam BigDecimal amount,
+                                                   Principal principal) {
+        return ResponseEntity.ok(service.addSavings(id, amount, principal));
     }
 
     @DeleteMapping("/{id}")

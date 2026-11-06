@@ -3,6 +3,7 @@ package com.vishnu.financemanager.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Data
@@ -10,7 +11,7 @@ import java.util.Map;
 public class MonthlyReportResponse {
     private int month;
     private int year;
-    private Map<String, Double> totalIncome;
-    private Map<String, Double> totalExpenses;
-    private double netSavings;
+    private Map<String, BigDecimal> totalIncome;
+    private Map<String, BigDecimal> totalExpenses;
+    private BigDecimal netSavings;
 }

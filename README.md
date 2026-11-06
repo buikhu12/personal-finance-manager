@@ -75,7 +75,7 @@ This project was built completely from scratch, including:
    ./mvnw spring-boot:run
 2. **Access the app in your browser**:
    ```bash
-   http://localhost:8081
+   http://localhost:8080
 
 ## ✅ Running Unit Tests
    ```bash

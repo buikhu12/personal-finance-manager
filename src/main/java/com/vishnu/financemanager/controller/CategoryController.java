@@ -1,7 +1,7 @@
 package com.vishnu.financemanager.controller;
 
 import com.vishnu.financemanager.dto.CategoryRequest;
-import com.vishnu.financemanager.model.Category;
+import com.vishnu.financemanager.dto.CategoryResponse;
 import com.vishnu.financemanager.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +20,12 @@ public class CategoryController {
     private final CategoryService service;
 
     @GetMapping
-    public ResponseEntity<List<Category>> getAll(Principal principal) {
+    public ResponseEntity<List<CategoryResponse>> getAll(Principal principal) {
         return ResponseEntity.ok(service.getAllCategories(principal));
     }
 
     @PostMapping
-    public ResponseEntity<Category> create(@Valid @RequestBody CategoryRequest request, Principal principal) {
+    public ResponseEntity<CategoryResponse> create(@Valid @RequestBody CategoryRequest request, Principal principal) {
         return new ResponseEntity<>(service.create(request, principal), HttpStatus.CREATED);
     }
 

@@ -28,7 +28,7 @@ public class TransactionService {
             throw new IllegalArgumentException("Date cannot be in the future");
         }
 
-        Category category = categoryRepo.findByNameAndUser(request.getCategory(), user)
+        Category category = categoryRepo.findByNameAndUserOrDefault(request.getCategory(), user)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid category"));
 
         Transaction tx = Transaction.builder()
@@ -54,10 +54,18 @@ public class TransactionService {
                 .filter(t -> t.getUser().getId().equals(user.getId()))
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
 
+        LocalDate date = LocalDate.parse(request.getDate());
+        if (date.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Date cannot be in the future");
+        }
+
+        Category category = categoryRepo.findByNameAndUserOrDefault(request.getCategory(), user)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid category"));
+
         tx.setAmount(request.getAmount());
+        tx.setDate(date);
         tx.setDescription(request.getDescription());
-        tx.setCategory(categoryRepo.findByNameAndUser(request.getCategory(), user)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid category")));
+        tx.setCategory(category);
 
         return map(transactionRepo.save(tx));
     }

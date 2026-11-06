@@ -1,5 +1,6 @@
 package com.vishnu.financemanager.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,6 +22,8 @@ public class User {
     private String username;
 
     @Column(nullable = false)
+    @JsonIgnore
+    @ToString.Exclude
     private String password;
 
     @Column(nullable = false)
@@ -30,11 +33,20 @@ public class User {
     private String phoneNumber;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Transaction> transactions;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Category> categories;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<SavingsGoal> savingsGoals;
 }

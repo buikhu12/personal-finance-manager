@@ -1,6 +1,7 @@
 package com.vishnu.financemanager.service;
 
 import com.vishnu.financemanager.dto.CategoryRequest;
+import com.vishnu.financemanager.dto.CategoryResponse;
 import com.vishnu.financemanager.model.*;
 import com.vishnu.financemanager.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,26 +19,32 @@ public class CategoryService {
     private final CategoryRepository categoryRepo;
     private final TransactionRepository transactionRepo;
 
-    public List<Category> getAllCategories(Principal principal) {
+    public List<CategoryResponse> getAllCategories(Principal principal) {
         User user = getUser(principal);
-        return categoryRepo.findByUserOrIsCustomFalse(user);
+        return categoryRepo.findByUserOrIsCustomFalse(user)
+                .stream()
+                .map(this::map)
+                .collect(Collectors.toList());
     }
 
-    public Category create(CategoryRequest request, Principal principal) {
+    public CategoryResponse create(CategoryRequest request, Principal principal) {
         User user = getUser(principal);
 
-        if (categoryRepo.existsByNameAndUser(request.getName(), user)) {
+        if (categoryRepo.existsByNameAndUser(request.getName(), user)
+                || categoryRepo.existsByNameIgnoreCaseAndIsCustomFalse(request.getName())) {
             throw new IllegalArgumentException("Category already exists");
         }
 
         CategoryType type = CategoryType.valueOf(request.getType().toUpperCase());
 
-        return categoryRepo.save(Category.builder()
+        Category saved = categoryRepo.save(Category.builder()
                 .name(request.getName())
                 .type(type)
                 .user(user)
                 .isCustom(true)
                 .build());
+
+        return map(saved);
     }
 
     public void delete(String name, Principal principal) {
@@ -56,6 +64,15 @@ public class CategoryService {
         }
 
         categoryRepo.delete(category);
+    }
+
+    private CategoryResponse map(Category category) {
+        return CategoryResponse.builder()
+                .id(category.getId())
+                .name(category.getName())
+                .type(category.getType().name())
+                .isCustom(category.isCustom())
+                .build();
     }
 
     private User getUser(Principal principal) {

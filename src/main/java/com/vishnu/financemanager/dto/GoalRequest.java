@@ -3,6 +3,8 @@ package com.vishnu.financemanager.dto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class GoalRequest {
     @NotBlank
@@ -10,7 +12,10 @@ public class GoalRequest {
 
     @NotNull
     @Positive
-    private Double targetAmount;
+    private BigDecimal targetAmount;
+
+    @PositiveOrZero
+    private BigDecimal currentAmount;
 
     @NotBlank
     private String targetDate;

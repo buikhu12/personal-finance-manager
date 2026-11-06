@@ -3,13 +3,15 @@ package com.vishnu.financemanager.dto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class TransactionRequest {
     @NotNull
     @Positive
-    private Double amount;
+    private BigDecimal amount;
 
-    @NotNull
+    @NotBlank
     private String date;  // YYYY-MM-DD
 
     @NotBlank

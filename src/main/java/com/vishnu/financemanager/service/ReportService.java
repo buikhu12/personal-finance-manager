@@ -6,11 +6,11 @@ import com.vishnu.financemanager.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,18 +26,20 @@ public class ReportService {
 
         List<Transaction> txs = txRepo.findByUserAndDateBetween(user, start, end);
 
-        Map<String, Double> incomeMap = new HashMap<>();
-        Map<String, Double> expenseMap = new HashMap<>();
-        double incomeTotal = 0, expenseTotal = 0;
+        Map<String, BigDecimal> incomeMap = new HashMap<>();
+        Map<String, BigDecimal> expenseMap = new HashMap<>();
+        BigDecimal incomeTotal = BigDecimal.ZERO;
+        BigDecimal expenseTotal = BigDecimal.ZERO;
 
         for (Transaction tx : txs) {
             String cat = tx.getCategory().getName();
+            BigDecimal amount = tx.getAmount() != null ? tx.getAmount() : BigDecimal.ZERO;
             if (tx.getCategory().getType() == CategoryType.INCOME) {
-                incomeMap.put(cat, incomeMap.getOrDefault(cat, 0.0) + tx.getAmount());
-                incomeTotal += tx.getAmount();
+                incomeMap.put(cat, incomeMap.getOrDefault(cat, BigDecimal.ZERO).add(amount));
+                incomeTotal = incomeTotal.add(amount);
             } else {
-                expenseMap.put(cat, expenseMap.getOrDefault(cat, 0.0) + tx.getAmount());
-                expenseTotal += tx.getAmount();
+                expenseMap.put(cat, expenseMap.getOrDefault(cat, BigDecimal.ZERO).add(amount));
+                expenseTotal = expenseTotal.add(amount);
             }
         }
 
@@ -46,7 +48,7 @@ public class ReportService {
                 .year(year)
                 .totalIncome(incomeMap)
                 .totalExpenses(expenseMap)
-                .netSavings(incomeTotal - expenseTotal)
+                .netSavings(incomeTotal.subtract(expenseTotal))
                 .build();
     }
 
@@ -57,18 +59,20 @@ public class ReportService {
 
         List<Transaction> txs = txRepo.findByUserAndDateBetween(user, start, end);
 
-        Map<String, Double> incomeMap = new HashMap<>();
-        Map<String, Double> expenseMap = new HashMap<>();
-        double incomeTotal = 0, expenseTotal = 0;
+        Map<String, BigDecimal> incomeMap = new HashMap<>();
+        Map<String, BigDecimal> expenseMap = new HashMap<>();
+        BigDecimal incomeTotal = BigDecimal.ZERO;
+        BigDecimal expenseTotal = BigDecimal.ZERO;
 
         for (Transaction tx : txs) {
             String cat = tx.getCategory().getName();
+            BigDecimal amount = tx.getAmount() != null ? tx.getAmount() : BigDecimal.ZERO;
             if (tx.getCategory().getType() == CategoryType.INCOME) {
-                incomeMap.put(cat, incomeMap.getOrDefault(cat, 0.0) + tx.getAmount());
-                incomeTotal += tx.getAmount();
+                incomeMap.put(cat, incomeMap.getOrDefault(cat, BigDecimal.ZERO).add(amount));
+                incomeTotal = incomeTotal.add(amount);
             } else {
-                expenseMap.put(cat, expenseMap.getOrDefault(cat, 0.0) + tx.getAmount());
-                expenseTotal += tx.getAmount();
+                expenseMap.put(cat, expenseMap.getOrDefault(cat, BigDecimal.ZERO).add(amount));
+                expenseTotal = expenseTotal.add(amount);
             }
         }
 
@@ -76,7 +80,7 @@ public class ReportService {
                 .year(year)
                 .totalIncome(incomeMap)
                 .totalExpenses(expenseMap)
-                .netSavings(incomeTotal - expenseTotal)
+                .netSavings(incomeTotal.subtract(expenseTotal))
                 .build();
     }
 

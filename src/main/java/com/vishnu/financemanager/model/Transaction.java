@@ -3,6 +3,7 @@ package com.vishnu.financemanager.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -16,8 +17,10 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double amount;
+    @Column(precision = 19, scale = 2, nullable = false)
+    private BigDecimal amount;
 
+    @Column(nullable = false)
     private LocalDate date;
 
     private String description;
