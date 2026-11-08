@@ -85,6 +85,12 @@ public class FinanceManagerApplication {
 
             case "logging.level.org.hibernate.SQL" -> setIfAbsent("LOG_SQL", value);
             case "LOG_SQL" -> setIfAbsent("logging.level.org.hibernate.SQL", value);
+
+            case "ai.gemini.api-key" -> setIfAbsent("AI_API_KEY", value);
+            case "AI_API_KEY" -> setIfAbsent("ai.gemini.api-key", value);
+
+            case "ai.gemini.model" -> setIfAbsent("AI_MODEL", value);
+            case "AI_MODEL" -> setIfAbsent("ai.gemini.model", value);
         }
     }
 
