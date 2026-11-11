@@ -32,6 +32,13 @@ This project was built completely from scratch, including:
 - Prevent future-dated transactions  
 - Filter by category/date
 
+### ✅ Wallets
+- Create and manage multiple wallets or accounts (cash, bank account, e-wallet, etc.)
+- Set an opening balance for each wallet
+- Assign transactions to a wallet
+- Calculate current balance from opening balance, income, and expenses
+- Keep a default wallet for existing transactions created before the wallet feature
+
 ### ✅ Categories  
 - Built-in default categories (not deletable)  
 - Create/delete personal categories  

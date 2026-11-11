@@ -7,11 +7,13 @@ import { CategoriesView } from './components/CategoriesView';
 import { GoalsView } from './components/GoalsView';
 import { ReportsView } from './components/ReportsView';
 import { AiAdvisorView } from './components/AiAdvisorView';
+import { WalletsView } from './components/WalletsView';
 import type {
   TransactionResponse,
   CategoryResponse,
   GoalResponse,
   AiAdviceResponse,
+  WalletResponse,
 } from './types';
 import {
   transactionApi,
@@ -19,6 +21,7 @@ import {
   goalApi,
   aiApi,
   authApi,
+  walletApi,
 } from './services/api';
 import { Wallet, LogIn, Sparkles, ShieldCheck } from 'lucide-react';
 import './App.css';
@@ -36,6 +39,7 @@ export const App: React.FC = () => {
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [goals, setGoals] = useState<GoalResponse[]>([]);
+  const [wallets, setWallets] = useState<WalletResponse[]>([]);
   const [aiAdvice, setAiAdvice] = useState<AiAdviceResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -44,14 +48,16 @@ export const App: React.FC = () => {
     if (!currentUser) return;
     setLoading(true);
     try {
-      const [txList, catList, goalList] = await Promise.all([
+      const [txList, catList, goalList, walletList] = await Promise.all([
         transactionApi.getAll().catch(() => []),
         categoryApi.getAll().catch(() => []),
         goalApi.getAll().catch(() => []),
+        walletApi.getAll().catch(() => []),
       ]);
       setTransactions(txList);
       setCategories(catList);
       setGoals(goalList);
+      setWallets(walletList);
 
       // Thử lấy nhanh đánh giá AI cho tháng hiện tại
       try {
@@ -74,6 +80,7 @@ export const App: React.FC = () => {
       setTransactions([]);
       setCategories([]);
       setGoals([]);
+      setWallets([]);
       setAiAdvice(null);
     }
   }, [currentUser]);
@@ -161,6 +168,7 @@ export const App: React.FC = () => {
               <DashboardView
                 transactions={transactions}
                 goals={goals}
+                wallets={wallets}
                 aiAdvice={aiAdvice}
                 onNavigate={setCurrentTab}
                 onOpenAddTransaction={() => setIsOpenAddTxModal(true)}
@@ -171,10 +179,18 @@ export const App: React.FC = () => {
               <TransactionsView
                 transactions={transactions}
                 categories={categories}
+                wallets={wallets}
                 onRefresh={refreshAllData}
                 isOpenAddModal={isOpenAddTxModal}
                 onCloseAddModal={() => setIsOpenAddTxModal(false)}
                 onOpenAddModal={() => setIsOpenAddTxModal(true)}
+              />
+            )}
+
+            {currentTab === 'wallets' && (
+              <WalletsView
+                wallets={wallets}
+                onRefresh={refreshAllData}
               />
             )}
 

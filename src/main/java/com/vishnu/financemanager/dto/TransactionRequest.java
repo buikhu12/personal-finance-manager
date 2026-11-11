@@ -17,5 +17,7 @@ public class TransactionRequest {
     @NotBlank
     private String category;
 
+    private Long walletId;
+
     private String description;
 }

@@ -11,6 +11,8 @@ public class TransactionResponse {
     private BigDecimal amount;
     private String date;
     private String category;
+    private Long walletId;
+    private String walletName;
     private String description;
     private String type; // INCOME or EXPENSE
 }

@@ -7,7 +7,10 @@ import type {
   GoalRequest,
   MonthlyReportResponse,
   YearlyReportResponse,
-  AiAdviceResponse
+  AiAdviceResponse,
+  WalletResponse,
+  WalletRequest,
+  WalletBankAccountRequest
 } from '../types';
 
 const BASE_URL = '/api';
@@ -99,7 +102,40 @@ export const transactionApi = {
 };
 
 // ----------------------------------------------------
-// 3. CATEGORY API (Quản lý danh mục)
+// 3. WALLET API (Quản lý ví/tài khoản)
+// ----------------------------------------------------
+export const walletApi = {
+  getAll: () => request<WalletResponse[]>('/wallets'),
+
+  create: (data: WalletRequest) =>
+    request<WalletResponse>('/wallets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: number, data: WalletRequest) =>
+    request<WalletResponse>(`/wallets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  linkBankAccount: (id: number, data: WalletBankAccountRequest) =>
+    request<void>(`/wallets/${id}/bank-account`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  unlinkBankAccount: (id: number) =>
+    request<void>(`/wallets/${id}/bank-account`, { method: 'DELETE' }),
+
+  delete: (id: number) =>
+    request<{ message: string }>(`/wallets/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+// ----------------------------------------------------
+// 4. CATEGORY API (Quản lý danh mục)
 // ----------------------------------------------------
 export const categoryApi = {
   getAll: () => request<CategoryResponse[]>('/categories'),
@@ -117,7 +153,7 @@ export const categoryApi = {
 };
 
 // ----------------------------------------------------
-// 4. SAVINGS GOALS API (Mục tiêu tiết kiệm)
+// 5. SAVINGS GOALS API (Mục tiêu tiết kiệm)
 // ----------------------------------------------------
 export const goalApi = {
   getAll: () => request<GoalResponse[]>('/goals'),
@@ -148,7 +184,7 @@ export const goalApi = {
 };
 
 // ----------------------------------------------------
-// 5. REPORT API (Báo cáo tháng & năm)
+// 6. REPORT API (Báo cáo tháng & năm)
 // ----------------------------------------------------
 export const reportApi = {
   getMonthly: (year: number, month: number) =>
@@ -159,7 +195,7 @@ export const reportApi = {
 };
 
 // ----------------------------------------------------
-// 6. AI ADVISOR API (Cố vấn tài chính AI)
+// 7. AI ADVISOR API (Cố vấn tài chính AI)
 // ----------------------------------------------------
 export const aiApi = {
   getMonthlyAdvice: (year: number, month: number) =>

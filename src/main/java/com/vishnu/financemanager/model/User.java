@@ -49,4 +49,10 @@ public class User {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<SavingsGoal> savingsGoals;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Wallet> wallets;
 }

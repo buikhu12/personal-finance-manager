@@ -9,12 +9,14 @@ import {
   PlusCircle,
   Calendar,
   AlertCircle,
+  Wallet as WalletIcon,
 } from 'lucide-react';
-import type { TransactionResponse, GoalResponse, AiAdviceResponse } from '../types';
+import type { TransactionResponse, GoalResponse, AiAdviceResponse, WalletResponse } from '../types';
 
 interface DashboardViewProps {
   transactions: TransactionResponse[];
   goals: GoalResponse[];
+  wallets: WalletResponse[];
   aiAdvice: AiAdviceResponse | null;
   onNavigate: (tab: string) => void;
   onOpenAddTransaction: () => void;
@@ -23,6 +25,7 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({
   transactions,
   goals,
+  wallets,
   aiAdvice,
   onNavigate,
   onOpenAddTransaction,
@@ -104,6 +107,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Wallet Overview */}
+      {wallets.length > 0 && (
+        <div className="dashboard-card wallet-overview-card">
+          <div className="card-header">
+            <div>
+              <h3>Số dư các ví</h3>
+              <p className="card-subtitle">Theo dõi nhanh số dư hiện tại của từng ví</p>
+            </div>
+            <button onClick={() => onNavigate('wallets')} className="btn-link">
+              Quản lý ví ({wallets.length})
+            </button>
+          </div>
+          <div className="wallet-overview-list">
+            {wallets.slice(0, 4).map((wallet) => (
+              <div key={wallet.id} className="wallet-overview-item">
+                <div className="wallet-overview-name">
+                  <WalletIcon size={17} />
+                  <span>{wallet.name}</span>
+                </div>
+                <strong className={wallet.currentBalance < 0 ? 'text-danger' : ''}>
+                  {formatCurrency(Number(wallet.currentBalance))}
+                </strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* AI Advice Summary Banner */}
       {aiAdvice && (

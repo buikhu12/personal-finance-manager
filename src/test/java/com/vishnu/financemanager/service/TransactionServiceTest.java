@@ -30,6 +30,9 @@ class TransactionServiceTest {
     @Mock
     private CategoryRepository categoryRepo;
 
+    @Mock
+    private WalletRepository walletRepo;
+
     private Principal principal;
     private User user;
 
@@ -39,6 +42,14 @@ class TransactionServiceTest {
         principal = () -> "test@example.com";
         user = User.builder().id(1L).username("test@example.com").build();
         when(userRepo.findByUsername("test@example.com")).thenReturn(Optional.of(user));
+        Wallet defaultWallet = Wallet.builder()
+                .id(99L)
+                .name(WalletService.DEFAULT_WALLET_NAME)
+                .initialBalance(BigDecimal.ZERO)
+                .user(user)
+                .build();
+        when(walletRepo.findByNameIgnoreCaseAndUser(WalletService.DEFAULT_WALLET_NAME, user))
+                .thenReturn(Optional.of(defaultWallet));
     }
 
     @Test

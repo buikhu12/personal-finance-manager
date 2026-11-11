@@ -19,6 +19,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepo;
     private final UserRepository userRepo;
     private final CategoryRepository categoryRepo;
+    private final WalletRepository walletRepo;
 
     public TransactionResponse create(TransactionRequest request, Principal principal) {
         User user = getUser(principal);
@@ -31,12 +32,15 @@ public class TransactionService {
         Category category = categoryRepo.findByNameAndUserOrDefault(request.getCategory(), user)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid category"));
 
+        Wallet wallet = resolveWallet(request.getWalletId(), user);
+
         Transaction tx = Transaction.builder()
                 .amount(request.getAmount())
                 .date(date)
                 .category(category)
                 .description(request.getDescription())
                 .user(user)
+                .wallet(wallet)
                 .build();
 
         return map(transactionRepo.save(tx));
@@ -62,10 +66,18 @@ public class TransactionService {
         Category category = categoryRepo.findByNameAndUserOrDefault(request.getCategory(), user)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid category"));
 
+        Wallet wallet = request.getWalletId() == null
+                ? tx.getWallet()
+                : resolveWallet(request.getWalletId(), user);
+        if (wallet == null) {
+            wallet = getOrCreateDefaultWallet(user);
+        }
+
         tx.setAmount(request.getAmount());
         tx.setDate(date);
         tx.setDescription(request.getDescription());
         tx.setCategory(category);
+        tx.setWallet(wallet);
 
         return map(transactionRepo.save(tx));
     }
@@ -84,6 +96,8 @@ public class TransactionService {
                 .amount(t.getAmount())
                 .date(t.getDate().toString())
                 .category(t.getCategory().getName())
+                .walletId(t.getWallet() != null ? t.getWallet().getId() : null)
+                .walletName(t.getWallet() != null ? t.getWallet().getName() : null)
                 .description(t.getDescription())
                 .type(t.getCategory().getType().name())
                 .build();
@@ -92,5 +106,22 @@ public class TransactionService {
     private User getUser(Principal principal) {
         return userRepo.findByUsername(principal.getName())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    private Wallet resolveWallet(Long walletId, User user) {
+        if (walletId == null) {
+            return getOrCreateDefaultWallet(user);
+        }
+        return walletRepo.findByIdAndUser(walletId, user)
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+    }
+
+    private Wallet getOrCreateDefaultWallet(User user) {
+        return walletRepo.findByNameIgnoreCaseAndUser(WalletService.DEFAULT_WALLET_NAME, user)
+                .orElseGet(() -> walletRepo.save(Wallet.builder()
+                        .name(WalletService.DEFAULT_WALLET_NAME)
+                        .initialBalance(java.math.BigDecimal.ZERO)
+                        .user(user)
+                        .build()));
     }
 }

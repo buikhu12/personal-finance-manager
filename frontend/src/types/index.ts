@@ -21,6 +21,8 @@ export interface TransactionResponse {
   amount: number;
   date: string;
   category: string;
+  walletId?: number | null;
+  walletName?: string | null;
   description: string;
   type: 'INCOME' | 'EXPENSE';
 }
@@ -29,7 +31,29 @@ export interface TransactionRequest {
   amount: number;
   date: string;
   category: string;
+  walletId?: number;
   description?: string;
+}
+
+export interface WalletResponse {
+  id: number;
+  name: string;
+  isDefault: boolean;
+  initialBalance: number;
+  currentBalance: number;
+  transactionCount: number;
+  bankName: string | null;
+  bankAccountLastFour: string | null;
+}
+
+export interface WalletRequest {
+  name: string;
+  initialBalance: number;
+}
+
+export interface WalletBankAccountRequest {
+  bankName: string;
+  lastFour: string;
 }
 
 export interface GoalResponse {

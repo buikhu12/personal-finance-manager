@@ -11,12 +11,13 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
-import type { TransactionResponse, TransactionRequest, CategoryResponse } from '../types';
+import type { TransactionResponse, TransactionRequest, CategoryResponse, WalletResponse } from '../types';
 import { transactionApi } from '../services/api';
 
 interface TransactionsViewProps {
   transactions: TransactionResponse[];
   categories: CategoryResponse[];
+  wallets: WalletResponse[];
   onRefresh: () => void;
   isOpenAddModal: boolean;
   onCloseAddModal: () => void;
@@ -26,6 +27,7 @@ interface TransactionsViewProps {
 export const TransactionsView: React.FC<TransactionsViewProps> = ({
   transactions,
   categories,
+  wallets,
   onRefresh,
   isOpenAddModal,
   onCloseAddModal,
@@ -40,6 +42,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [category, setCategory] = useState('');
+  const [walletId, setWalletId] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,6 +53,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     setAmount('');
     setDate(new Date().toISOString().split('T')[0]);
     setCategory(categories[0]?.name || '');
+    setWalletId(wallets[0] ? String(wallets[0].id) : '');
     setDescription('');
     setError(null);
     onOpenAddModal();
@@ -61,6 +65,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     setAmount(tx.amount.toString());
     setDate(tx.date);
     setCategory(tx.category);
+    setWalletId(tx.walletId ? String(tx.walletId) : wallets[0] ? String(wallets[0].id) : '');
     setDescription(tx.description || '');
     setError(null);
     onOpenAddModal();
@@ -97,6 +102,9 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
       category,
       description,
     };
+    if (walletId) {
+      payload.walletId = Number(walletId);
+    }
 
     setLoading(true);
     try {
@@ -220,6 +228,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             <thead>
               <tr>
                 <th>Loại</th>
+                <th>Ví</th>
                 <th>Danh mục</th>
                 <th>Mô tả</th>
                 <th>Ngày</th>
@@ -235,6 +244,9 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       {tx.type === 'INCOME' ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />}
                       {tx.type === 'INCOME' ? 'Thu' : 'Chi'}
                     </span>
+                  </td>
+                  <td>
+                    <span className="font-medium">{tx.walletName || 'Ví mặc định'}</span>
                   </td>
                   <td>
                     <span className="font-medium">{tx.category}</span>
@@ -305,6 +317,25 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="Ví dụ: 500000"
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Ví</label>
+                <select
+                  value={walletId}
+                  onChange={(e) => setWalletId(e.target.value)}
+                  disabled={wallets.length === 0}
+                >
+                  {wallets.length === 0 ? (
+                    <option value="">Ví mặc định</option>
+                  ) : (
+                    wallets.map((wallet) => (
+                      <option key={wallet.id} value={wallet.id}>
+                        {wallet.name}
+                      </option>
+                    ))
+                  )}
+                </select>
               </div>
 
               <div className="form-group">
