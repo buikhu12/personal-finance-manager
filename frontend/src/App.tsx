@@ -34,6 +34,7 @@ export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isOpenAddTxModal, setIsOpenAddTxModal] = useState(false);
+  const [selectedWalletFilter, setSelectedWalletFilter] = useState<string>('ALL');
 
   // Dữ liệu ứng dụng
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
@@ -172,6 +173,10 @@ export const App: React.FC = () => {
                 aiAdvice={aiAdvice}
                 onNavigate={setCurrentTab}
                 onOpenAddTransaction={() => setIsOpenAddTxModal(true)}
+                onViewWalletTransactions={(wId) => {
+                  setSelectedWalletFilter(String(wId));
+                  setCurrentTab('transactions');
+                }}
               />
             )}
 
@@ -184,13 +189,25 @@ export const App: React.FC = () => {
                 isOpenAddModal={isOpenAddTxModal}
                 onCloseAddModal={() => setIsOpenAddTxModal(false)}
                 onOpenAddModal={() => setIsOpenAddTxModal(true)}
+                selectedWalletFilter={selectedWalletFilter}
+                onSelectWalletFilter={setSelectedWalletFilter}
               />
             )}
 
             {currentTab === 'wallets' && (
               <WalletsView
                 wallets={wallets}
+                transactions={transactions}
                 onRefresh={refreshAllData}
+                onViewWalletTransactions={(wId) => {
+                  setSelectedWalletFilter(String(wId));
+                  setCurrentTab('transactions');
+                }}
+                onAddTransactionForWallet={(wId) => {
+                  setSelectedWalletFilter(String(wId));
+                  setIsOpenAddTxModal(true);
+                  setCurrentTab('transactions');
+                }}
               />
             )}
 

@@ -20,6 +20,7 @@ interface DashboardViewProps {
   aiAdvice: AiAdviceResponse | null;
   onNavigate: (tab: string) => void;
   onOpenAddTransaction: () => void;
+  onViewWalletTransactions?: (walletId: number) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -29,6 +30,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   aiAdvice,
   onNavigate,
   onOpenAddTransaction,
+  onViewWalletTransactions,
 }) => {
   // Tính tổng thu nhập và chi tiêu từ các giao dịch hiện có
   const totalIncome = transactions
@@ -113,19 +115,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="dashboard-card wallet-overview-card">
           <div className="card-header">
             <div>
-              <h3>Số dư các ví</h3>
-              <p className="card-subtitle">Theo dõi nhanh số dư hiện tại của từng ví</p>
+              <h3>Số dư các ví ({wallets.length})</h3>
+              <p className="card-subtitle">
+                Tổng tài sản: <strong>{formatCurrency(wallets.reduce((s, w) => s + Number(w.currentBalance), 0))}</strong>
+              </p>
             </div>
             <button onClick={() => onNavigate('wallets')} className="btn-link">
-              Quản lý ví ({wallets.length})
+              Quản lý chi tiết ví →
             </button>
           </div>
           <div className="wallet-overview-list">
-            {wallets.slice(0, 4).map((wallet) => (
-              <div key={wallet.id} className="wallet-overview-item">
+            {wallets.slice(0, 6).map((wallet) => (
+              <div
+                key={wallet.id}
+                className="wallet-overview-item cursor-pointer"
+                onClick={() =>
+                  onViewWalletTransactions ? onViewWalletTransactions(wallet.id) : onNavigate('wallets')
+                }
+                title="Bấm để xem giao dịch của ví này"
+              >
                 <div className="wallet-overview-name">
                   <WalletIcon size={17} />
                   <span>{wallet.name}</span>
+                  {wallet.isDefault && <span className="wallet-default-tag">Mặc định</span>}
                 </div>
                 <strong className={wallet.currentBalance < 0 ? 'text-danger' : ''}>
                   {formatCurrency(Number(wallet.currentBalance))}
@@ -180,7 +192,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {recentTransactions.map((tx) => (
                 <div key={tx.id} className="recent-item">
                   <div className="recent-item-info">
-                    <span className="tx-category">{tx.category}</span>
+                    <div className="recent-meta-tags">
+                      <span className="tx-category">{tx.category}</span>
+                      <span className="tx-wallet-tag">
+                        <WalletIcon size={12} />
+                        {tx.walletName || 'Ví mặc định'}
+                      </span>
+                    </div>
                     <span className="tx-desc">{tx.description || 'Không có mô tả'}</span>
                     <span className="tx-date">
                       <Calendar size={12} />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus,
   Trash2,
@@ -10,6 +10,7 @@ import {
   Calendar,
   X,
   AlertCircle,
+  Wallet as WalletIcon,
 } from 'lucide-react';
 import type { TransactionResponse, TransactionRequest, CategoryResponse, WalletResponse } from '../types';
 import { transactionApi } from '../services/api';
@@ -22,6 +23,8 @@ interface TransactionsViewProps {
   isOpenAddModal: boolean;
   onCloseAddModal: () => void;
   onOpenAddModal: () => void;
+  selectedWalletFilter?: string;
+  onSelectWalletFilter?: (walletId: string) => void;
 }
 
 export const TransactionsView: React.FC<TransactionsViewProps> = ({
@@ -32,10 +35,19 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   isOpenAddModal,
   onCloseAddModal,
   onOpenAddModal,
+  selectedWalletFilter,
+  onSelectWalletFilter,
 }) => {
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedWallet, setSelectedWallet] = useState<string>(selectedWalletFilter || 'ALL');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (selectedWalletFilter !== undefined) {
+      setSelectedWallet(selectedWalletFilter);
+    }
+  }, [selectedWalletFilter]);
 
   // State cho Modal Tạo / Chỉnh sửa
   const [editingTx, setEditingTx] = useState<TransactionResponse | null>(null);
@@ -137,11 +149,19 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   const filtered = transactions.filter((t) => {
     if (filterType !== 'ALL' && t.type !== filterType) return false;
     if (selectedCategory !== 'ALL' && t.category !== selectedCategory) return false;
+    if (selectedWallet !== 'ALL') {
+      const wId = Number(selectedWallet);
+      const isDefaultWallet = wallets.find((w) => w.id === wId)?.isDefault;
+      if (t.walletId !== wId && !(isDefaultWallet && t.walletId == null)) {
+        return false;
+      }
+    }
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       const matchDesc = t.description?.toLowerCase().includes(q);
       const matchCat = t.category.toLowerCase().includes(q);
-      if (!matchDesc && !matchCat) return false;
+      const matchWallet = t.walletName?.toLowerCase().includes(q);
+      if (!matchDesc && !matchCat && !matchWallet) return false;
     }
     return true;
   });
@@ -210,6 +230,25 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             {categories.map((c) => (
               <option key={c.id} value={c.name}>
                 {c.name} ({c.type === 'INCOME' ? 'Thu' : 'Chi'})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Wallet Select */}
+        <div className="category-select-wrapper">
+          <WalletIcon size={16} />
+          <select
+            value={selectedWallet}
+            onChange={(e) => {
+              setSelectedWallet(e.target.value);
+              onSelectWalletFilter?.(e.target.value);
+            }}
+          >
+            <option value="ALL">Tất cả ví</option>
+            {wallets.map((w) => (
+              <option key={w.id} value={String(w.id)}>
+                {w.name} {w.isDefault ? '(Mặc định)' : ''}
               </option>
             ))}
           </select>
