@@ -1,0 +1,14 @@
+services:
+  finance-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: personal-finance-manager
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=default
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

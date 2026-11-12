@@ -22,6 +22,7 @@ public class Wallet {
     @Column(nullable = false)
     private String name;
 
+    @Builder.Default
     @Column(precision = 19, scale = 2, nullable = false)
     private BigDecimal initialBalance = BigDecimal.ZERO;
 
