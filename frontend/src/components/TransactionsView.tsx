@@ -25,6 +25,7 @@ interface TransactionsViewProps {
   onOpenAddModal: () => void;
   selectedWalletFilter?: string;
   onSelectWalletFilter?: (walletId: string) => void;
+  initialWalletId?: string | null;
 }
 
 export const TransactionsView: React.FC<TransactionsViewProps> = ({
@@ -37,6 +38,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   onOpenAddModal,
   selectedWalletFilter,
   onSelectWalletFilter,
+  initialWalletId,
 }) => {
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -59,13 +61,42 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Khi mở form tạo mới
+  // Xác định ID ví mặc định khi mở form tạo mới
+  const resolveDefaultWalletId = (preferredId?: string | null) => {
+    if (preferredId && wallets.some((w) => String(w.id) === String(preferredId))) {
+      return String(preferredId);
+    }
+    if (initialWalletId && wallets.some((w) => String(w.id) === String(initialWalletId))) {
+      return String(initialWalletId);
+    }
+    if (selectedWallet !== 'ALL' && wallets.some((w) => String(w.id) === selectedWallet)) {
+      return selectedWallet;
+    }
+    const defaultW = wallets.find((w) => w.isDefault) || wallets[0];
+    return defaultW ? String(defaultW.id) : '';
+  };
+
+  // Đồng bộ khởi tạo form khi isOpenAddModal mở từ bên ngoài (App.tsx / WalletsView)
+  useEffect(() => {
+    if (isOpenAddModal && !editingTx) {
+      setAmount('');
+      setDate(new Date().toISOString().split('T')[0]);
+      if (categories.length > 0 && !category) {
+        setCategory(categories[0].name);
+      }
+      setWalletId(resolveDefaultWalletId(initialWalletId));
+      setDescription('');
+      setError(null);
+    }
+  }, [isOpenAddModal, initialWalletId, wallets]);
+
+  // Khi mở form tạo mới từ nút trong TransactionsView
   const handleOpenCreate = () => {
     setEditingTx(null);
     setAmount('');
     setDate(new Date().toISOString().split('T')[0]);
     setCategory(categories[0]?.name || '');
-    setWalletId(wallets[0] ? String(wallets[0].id) : '');
+    setWalletId(resolveDefaultWalletId(initialWalletId));
     setDescription('');
     setError(null);
     onOpenAddModal();
@@ -77,10 +108,17 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     setAmount(tx.amount.toString());
     setDate(tx.date);
     setCategory(tx.category);
-    setWalletId(tx.walletId ? String(tx.walletId) : wallets[0] ? String(wallets[0].id) : '');
+    setWalletId(tx.walletId ? String(tx.walletId) : resolveDefaultWalletId());
     setDescription(tx.description || '');
     setError(null);
     onOpenAddModal();
+  };
+
+  // Đóng modal và reset trạng thái editing
+  const handleCloseModal = () => {
+    setEditingTx(null);
+    setError(null);
+    onCloseAddModal();
   };
 
   // Submit Lưu
@@ -125,7 +163,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
       } else {
         await transactionApi.create(payload);
       }
-      onCloseAddModal();
+      handleCloseModal();
       onRefresh();
     } catch (err: any) {
       setError(err.message || 'Lỗi khi lưu giao dịch.');
@@ -329,7 +367,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
       {isOpenAddModal && (
         <div className="modal-backdrop">
           <div className="modal-card">
-            <button onClick={onCloseAddModal} className="modal-close-btn">
+            <button onClick={handleCloseModal} className="modal-close-btn">
               <X size={20} />
             </button>
 

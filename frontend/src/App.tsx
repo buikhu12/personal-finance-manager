@@ -35,6 +35,7 @@ export const App: React.FC = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isOpenAddTxModal, setIsOpenAddTxModal] = useState(false);
   const [selectedWalletFilter, setSelectedWalletFilter] = useState<string>('ALL');
+  const [targetWalletIdForTx, setTargetWalletIdForTx] = useState<string | null>(null);
 
   // Dữ liệu ứng dụng
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
@@ -172,7 +173,10 @@ export const App: React.FC = () => {
                 wallets={wallets}
                 aiAdvice={aiAdvice}
                 onNavigate={setCurrentTab}
-                onOpenAddTransaction={() => setIsOpenAddTxModal(true)}
+                onOpenAddTransaction={() => {
+                  setTargetWalletIdForTx(null);
+                  setIsOpenAddTxModal(true);
+                }}
                 onViewWalletTransactions={(wId) => {
                   setSelectedWalletFilter(String(wId));
                   setCurrentTab('transactions');
@@ -187,10 +191,17 @@ export const App: React.FC = () => {
                 wallets={wallets}
                 onRefresh={refreshAllData}
                 isOpenAddModal={isOpenAddTxModal}
-                onCloseAddModal={() => setIsOpenAddTxModal(false)}
-                onOpenAddModal={() => setIsOpenAddTxModal(true)}
+                onCloseAddModal={() => {
+                  setIsOpenAddTxModal(false);
+                  setTargetWalletIdForTx(null);
+                }}
+                onOpenAddModal={() => {
+                  setTargetWalletIdForTx(null);
+                  setIsOpenAddTxModal(true);
+                }}
                 selectedWalletFilter={selectedWalletFilter}
                 onSelectWalletFilter={setSelectedWalletFilter}
+                initialWalletId={targetWalletIdForTx}
               />
             )}
 
@@ -204,6 +215,7 @@ export const App: React.FC = () => {
                   setCurrentTab('transactions');
                 }}
                 onAddTransactionForWallet={(wId) => {
+                  setTargetWalletIdForTx(String(wId));
                   setSelectedWalletFilter(String(wId));
                   setIsOpenAddTxModal(true);
                   setCurrentTab('transactions');
