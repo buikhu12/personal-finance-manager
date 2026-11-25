@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
 import { DashboardView } from './components/DashboardView';
@@ -8,6 +8,7 @@ import { GoalsView } from './components/GoalsView';
 import { ReportsView } from './components/ReportsView';
 import { AiAdvisorView } from './components/AiAdvisorView';
 import { WalletsView } from './components/WalletsView';
+import { BudgetsView } from './components/BudgetsView';
 import type {
   TransactionResponse,
   CategoryResponse,
@@ -21,6 +22,7 @@ import {
   goalApi,
   aiApi,
   authApi,
+  ApiError,
   walletApi,
 } from './services/api';
 import { Wallet, LogIn, Sparkles, ShieldCheck } from 'lucide-react';
@@ -44,6 +46,14 @@ export const App: React.FC = () => {
   const [wallets, setWallets] = useState<WalletResponse[]>([]);
   const [aiAdvice, setAiAdvice] = useState<AiAdviceResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sessionChecking, setSessionChecking] = useState(Boolean(currentUser));
+
+  const handleSessionExpired = useCallback(() => {
+    localStorage.removeItem('finance_user');
+    setCurrentUser(null);
+    setCurrentTab('dashboard');
+    setIsAuthOpen(true);
+  }, []);
 
   // Tải lại tất cả dữ liệu
   const refreshAllData = async () => {
@@ -77,19 +87,34 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      refreshAllData();
+      let active = true;
+      transactionApi.getAll().then(() => {
+        if (active) {
+          setSessionChecking(false);
+          refreshAllData();
+        }
+      }).catch((error: unknown) => {
+        if (!active) return;
+        setSessionChecking(false);
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          handleSessionExpired();
+        }
+      });
+      return () => { active = false; };
     } else {
+      setSessionChecking(false);
       setTransactions([]);
       setCategories([]);
       setGoals([]);
       setWallets([]);
       setAiAdvice(null);
     }
-  }, [currentUser]);
+  }, [currentUser, handleSessionExpired]);
 
   // Xử lý đăng nhập thành công
   const handleAuthSuccess = (username: string) => {
     localStorage.setItem('finance_user', username);
+    setSessionChecking(false);
     setCurrentUser(username);
     setCurrentTab('dashboard');
   };
@@ -120,7 +145,9 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="main-content">
-        {!currentUser ? (
+        {sessionChecking ? (
+          <p className="text-muted" role="status">Đang kiểm tra phiên đăng nhập…</p>
+        ) : !currentUser ? (
           /* Màn hình giới thiệu khi chưa đăng nhập */
           <div className="hero-landing">
             <div className="hero-badge">
@@ -229,6 +256,8 @@ export const App: React.FC = () => {
                 onRefresh={refreshAllData}
               />
             )}
+
+            {currentTab === 'budgets' && <BudgetsView categories={categories} onSessionExpired={handleSessionExpired} />}
 
             {currentTab === 'goals' && (
               <GoalsView

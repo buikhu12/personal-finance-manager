@@ -27,6 +27,9 @@ class CategoryServiceTest {
     @Mock
     private TransactionRepository transactionRepo;
 
+    @Mock
+    private BudgetRepository budgetRepo;
+
     private User user;
     private Principal principal;
 

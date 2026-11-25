@@ -58,9 +58,10 @@ body {
   margin: 0 auto;
   padding: 0.75rem 1.5rem;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 0.75rem;
 }
 
 .navbar-brand {
@@ -96,6 +97,10 @@ body {
 }
 
 .navbar-links {
+  order: 1;
+  flex-basis: 100%;
+  min-width: 0;
+  overflow-x: auto;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -115,6 +120,7 @@ body {
   cursor: pointer;
   transition: all 0.15s ease;
   position: relative;
+  white-space: nowrap;
 }
 
 .nav-button:hover {
@@ -572,6 +578,69 @@ body {
 .progress-bar-fill.bg-income { background: var(--income); }
 .progress-bar-fill.bg-expense { background: var(--expense); }
 .progress-bar-fill.bg-success { background: var(--income); }
+
+.budget-month {
+  min-width: 10rem;
+}
+
+.budget-actions,
+.budget-card-header,
+.budget-card-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.budget-card-header,
+.budget-card-summary {
+  justify-content: space-between;
+}
+
+.budget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+}
+
+.budget-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-card);
+}
+
+.budget-card-summary {
+  font-size: 0.85rem;
+}
+
+.budget-status {
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  background: var(--income-light);
+  color: #047857;
+  font-weight: 600;
+}
+
+.budget-status.NEAR_LIMIT,
+.budget-status.AT_LIMIT {
+  background: var(--warning-light);
+  color: #92400e;
+}
+
+.budget-status.EXCEEDED {
+  background: var(--expense-light);
+  color: #be123c;
+}
+
+.budget-fill.SAFE { background: var(--income); }
+.budget-fill.NEAR_LIMIT,
+.budget-fill.AT_LIMIT { background: var(--warning); }
+.budget-fill.EXCEEDED { background: var(--expense); }
 
 .goal-mini-footer {
   display: flex;

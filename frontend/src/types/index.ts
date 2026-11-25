@@ -16,6 +16,24 @@ export interface CategoryRequest {
   type: 'INCOME' | 'EXPENSE';
 }
 
+export interface BudgetRequest {
+  categoryId: number;
+  month: string;
+  limitAmount: string;
+}
+
+export interface BudgetResponse {
+  id: number;
+  categoryId: number;
+  categoryName: string;
+  month: string;
+  limitAmount: number;
+  spentAmount: number;
+  remainingAmount: number;
+  usagePercentage: number;
+  status: 'SAFE' | 'NEAR_LIMIT' | 'AT_LIMIT' | 'EXCEEDED';
+}
+
 export interface TransactionResponse {
   id: number;
   amount: number;

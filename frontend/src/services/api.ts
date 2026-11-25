@@ -1,4 +1,6 @@
 import type {
+  BudgetRequest,
+  BudgetResponse,
   CategoryResponse,
   CategoryRequest,
   TransactionResponse,
@@ -14,6 +16,16 @@ import type {
 } from '../types';
 
 const BASE_URL = '/api';
+
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
 
 /**
  * Hàm gọi API tổng quát, tự động gửi kèm Cookie phiên đăng nhập (JSESSIONID)
@@ -44,7 +56,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     } catch {
       // Bỏ qua nếu response không phải JSON
     }
-    throw new Error(errorMsg);
+    throw new ApiError(errorMsg, response.status);
   }
 
   // Nếu HTTP 204 No Content hoặc response rỗng
@@ -150,6 +162,26 @@ export const categoryApi = {
     request<{ message: string }>(`/categories/${encodeURIComponent(name)}`, {
       method: 'DELETE',
     }),
+};
+
+export const budgetApi = {
+  getAll: (month: string, signal?: AbortSignal) =>
+    request<BudgetResponse[]>(`/budgets?month=${encodeURIComponent(month)}`, { signal }),
+
+  create: (data: BudgetRequest) =>
+    request<BudgetResponse>('/budgets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: number, data: BudgetRequest) =>
+    request<BudgetResponse>(`/budgets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: number) =>
+    request<void>(`/budgets/${id}`, { method: 'DELETE' }),
 };
 
 // ----------------------------------------------------

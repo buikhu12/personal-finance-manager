@@ -18,6 +18,7 @@ public class CategoryService {
     private final UserRepository userRepo;
     private final CategoryRepository categoryRepo;
     private final TransactionRepository transactionRepo;
+    private final BudgetRepository budgetRepo;
 
     public List<CategoryResponse> getAllCategories(Principal principal) {
         User user = getUser(principal);
@@ -61,6 +62,9 @@ public class CategoryService {
 
         if (inUse) {
             throw new IllegalStateException("Cannot delete category that is in use");
+        }
+        if (budgetRepo.existsByCategory(category)) {
+            throw new IllegalStateException("Danh mục đang được sử dụng trong ngân sách.");
         }
 
         categoryRepo.delete(category);

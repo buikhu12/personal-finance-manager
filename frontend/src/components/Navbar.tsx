@@ -3,6 +3,7 @@ import {
   Wallet,
   LayoutDashboard,
   ReceiptText,
+  ChartPie,
   Tags,
   Target,
   BarChart3,
@@ -30,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
     { id: 'wallets', label: 'Ví', icon: Wallet },
     { id: 'transactions', label: 'Giao dịch', icon: ReceiptText },
+    { id: 'budgets', label: 'Ngân sách', icon: ChartPie },
     { id: 'categories', label: 'Danh mục', icon: Tags },
     { id: 'goals', label: 'Mục tiêu', icon: Target },
     { id: 'reports', label: 'Báo cáo', icon: BarChart3 },
@@ -59,6 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               return (
                 <button
                   key={item.id}
+                  aria-current={isActive ? 'page' : undefined}
                   onClick={() => setCurrentTab(item.id)}
                   className={`nav-button ${isActive ? 'active' : ''}`}
                 >
