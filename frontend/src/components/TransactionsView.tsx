@@ -121,6 +121,40 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     onCloseAddModal();
   };
 
+  // Tính số dư khả dụng của ví đang chọn trong form (loại trừ giao dịch đang sửa nếu cùng ví)
+  const selectedWalletObj =
+    wallets.find((w) => String(w.id) === walletId) ||
+    wallets.find((w) => w.isDefault) ||
+    wallets[0];
+
+  const selectedCategoryObj = categories.find((c) => c.name === category);
+
+  const getAvailableWalletBalance = (targetWallet: WalletResponse | undefined) => {
+    if (!targetWallet) return 0;
+    let balance = Number(targetWallet.currentBalance);
+    if (editingTx) {
+      const sameWallet =
+        editingTx.walletId === targetWallet.id ||
+        (targetWallet.isDefault && editingTx.walletId == null);
+      if (sameWallet) {
+        if (editingTx.type === 'EXPENSE') {
+          balance += Number(editingTx.amount);
+        } else {
+          balance -= Number(editingTx.amount);
+        }
+      }
+    }
+    return balance;
+  };
+
+  const availableBalance = getAvailableWalletBalance(selectedWalletObj);
+  const parsedFormAmount = parseFloat(amount);
+  const isInsufficientBalance =
+    selectedCategoryObj?.type === 'EXPENSE' &&
+    Boolean(selectedWalletObj) &&
+    !isNaN(parsedFormAmount) &&
+    parsedFormAmount > availableBalance;
+
   // Submit Lưu
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +168,13 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
 
     if (!category) {
       setError('Vui lòng chọn danh mục.');
+      return;
+    }
+
+    if (selectedCategoryObj?.type === 'EXPENSE' && selectedWalletObj && numAmount > availableBalance) {
+      setError(
+        `Số dư ví "${selectedWalletObj.name}" không đủ để chi (Hiện có: ${formatCurrency(availableBalance)}, cần chi: ${formatCurrency(numAmount)}).`
+      );
       return;
     }
 
@@ -408,11 +449,21 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                   ) : (
                     wallets.map((wallet) => (
                       <option key={wallet.id} value={wallet.id}>
-                        {wallet.name}
+                        {wallet.name} ({formatCurrency(Number(wallet.currentBalance))})
                       </option>
                     ))
                   )}
                 </select>
+                {selectedWalletObj && (
+                  <span
+                    className={`field-hint ${isInsufficientBalance ? 'text-danger' : ''}`}
+                    style={isInsufficientBalance ? { color: 'var(--danger)', fontWeight: 600 } : undefined}
+                  >
+                    {isInsufficientBalance
+                      ? `Không đủ số dư! Ví khả dụng: ${formatCurrency(availableBalance)}`
+                      : `Số dư khả dụng: ${formatCurrency(availableBalance)}`}
+                  </span>
+                )}
               </div>
 
               <div className="form-group">

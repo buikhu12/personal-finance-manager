@@ -146,7 +146,32 @@ public class WalletService {
                 .build();
     }
 
-    private BigDecimal applyTransaction(BigDecimal balance, Transaction transaction) {
+    /**
+     * Calculates the current balance of a wallet from its initial balance and user transactions,
+     * optionally excluding a specific transaction (used when validating transaction updates).
+     */
+    public static BigDecimal calculateWalletBalance(
+            Wallet wallet,
+            List<Transaction> userTransactions,
+            Long excludeTransactionId
+    ) {
+        BigDecimal balance = wallet.getInitialBalance() == null ? BigDecimal.ZERO : wallet.getInitialBalance();
+        boolean isDefault = DEFAULT_WALLET_NAME.equalsIgnoreCase(wallet.getName());
+        for (Transaction transaction : userTransactions) {
+            if (excludeTransactionId != null && excludeTransactionId.equals(transaction.getId())) {
+                continue;
+            }
+            boolean belongsToWallet = transaction.getWallet() != null
+                    ? wallet.getId() != null && wallet.getId().equals(transaction.getWallet().getId())
+                    : isDefault;
+            if (belongsToWallet) {
+                balance = applyTransaction(balance, transaction);
+            }
+        }
+        return balance;
+    }
+
+    private static BigDecimal applyTransaction(BigDecimal balance, Transaction transaction) {
         if (transaction.getCategory().getType() == CategoryType.INCOME) {
             return balance.add(transaction.getAmount());
         }

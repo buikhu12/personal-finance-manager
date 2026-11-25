@@ -45,7 +45,7 @@ class TransactionServiceTest {
         Wallet defaultWallet = Wallet.builder()
                 .id(99L)
                 .name(WalletService.DEFAULT_WALLET_NAME)
-                .initialBalance(BigDecimal.ZERO)
+                .initialBalance(new BigDecimal("500.00"))
                 .user(user)
                 .build();
         when(walletRepo.findByNameIgnoreCaseAndUser(WalletService.DEFAULT_WALLET_NAME, user))
@@ -137,5 +137,112 @@ class TransactionServiceTest {
         when(txRepo.findById(10L)).thenReturn(Optional.of(existingTx));
 
         assertThrows(IllegalArgumentException.class, () -> service.update(10L, req, principal));
+    }
+
+    @Test
+    void create_expenseExceedsWalletBalance_throwsException() {
+        Wallet bankWallet = Wallet.builder()
+                .id(5L)
+                .name("Vietcombank")
+                .initialBalance(new BigDecimal("100.00"))
+                .user(user)
+                .build();
+        Category expenseCategory = Category.builder()
+                .id(2L)
+                .name("Food")
+                .type(CategoryType.EXPENSE)
+                .isCustom(false)
+                .build();
+
+        when(categoryRepo.findByNameAndUserOrDefault("Food", user)).thenReturn(Optional.of(expenseCategory));
+        when(walletRepo.findByIdAndUser(5L, user)).thenReturn(Optional.of(bankWallet));
+        when(txRepo.findByUser(user)).thenReturn(List.of());
+
+        TransactionRequest req = new TransactionRequest();
+        req.setAmount(new BigDecimal("150.00"));
+        req.setDate(LocalDate.now().toString());
+        req.setCategory("Food");
+        req.setWalletId(5L);
+
+        assertThrows(IllegalArgumentException.class, () -> service.create(req, principal));
+        verify(txRepo, never()).save(any());
+    }
+
+    @Test
+    void update_expenseWithinWalletBalanceExcludingSelf_succeeds() {
+        Wallet bankWallet = Wallet.builder()
+                .id(5L)
+                .name("Vietcombank")
+                .initialBalance(new BigDecimal("100.00"))
+                .user(user)
+                .build();
+        Category expenseCategory = Category.builder()
+                .id(2L)
+                .name("Food")
+                .type(CategoryType.EXPENSE)
+                .isCustom(false)
+                .build();
+        Transaction existingTx = Transaction.builder()
+                .id(10L)
+                .amount(new BigDecimal("60.00"))
+                .date(LocalDate.now().minusDays(1))
+                .category(expenseCategory)
+                .wallet(bankWallet)
+                .user(user)
+                .build();
+
+        when(txRepo.findById(10L)).thenReturn(Optional.of(existingTx));
+        when(categoryRepo.findByNameAndUserOrDefault("Food", user)).thenReturn(Optional.of(expenseCategory));
+        when(walletRepo.findByIdAndUser(5L, user)).thenReturn(Optional.of(bankWallet));
+        when(txRepo.findByUser(user)).thenReturn(List.of(existingTx));
+        when(txRepo.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TransactionRequest req = new TransactionRequest();
+        req.setAmount(new BigDecimal("90.00"));
+        req.setDate(LocalDate.now().toString());
+        req.setCategory("Food");
+        req.setWalletId(5L);
+
+        TransactionResponse response = service.update(10L, req, principal);
+        assertEquals(new BigDecimal("90.00"), response.getAmount());
+        verify(txRepo).save(any());
+    }
+
+    @Test
+    void update_expenseExceedsWalletBalanceExcludingSelf_throwsException() {
+        Wallet bankWallet = Wallet.builder()
+                .id(5L)
+                .name("Vietcombank")
+                .initialBalance(new BigDecimal("100.00"))
+                .user(user)
+                .build();
+        Category expenseCategory = Category.builder()
+                .id(2L)
+                .name("Food")
+                .type(CategoryType.EXPENSE)
+                .isCustom(false)
+                .build();
+        Transaction existingTx = Transaction.builder()
+                .id(10L)
+                .amount(new BigDecimal("60.00"))
+                .date(LocalDate.now().minusDays(1))
+                .category(expenseCategory)
+                .wallet(bankWallet)
+                .user(user)
+                .build();
+
+        when(txRepo.findById(10L)).thenReturn(Optional.of(existingTx));
+        when(categoryRepo.findByNameAndUserOrDefault("Food", user)).thenReturn(Optional.of(expenseCategory));
+        when(walletRepo.findByIdAndUser(5L, user)).thenReturn(Optional.of(bankWallet));
+        when(txRepo.findByUser(user)).thenReturn(List.of(existingTx));
+
+        TransactionRequest req = new TransactionRequest();
+        req.setAmount(new BigDecimal("110.00"));
+        req.setDate(LocalDate.now().toString());
+        req.setCategory("Food");
+        req.setWalletId(5L);
+
+        assertThrows(IllegalArgumentException.class, () -> service.update(10L, req, principal));
+        verify(txRepo, never()).save(any());
     }
 }

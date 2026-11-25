@@ -7,6 +7,7 @@ import com.vishnu.financemanager.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
@@ -33,6 +34,7 @@ public class TransactionService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid category"));
 
         Wallet wallet = resolveWallet(request.getWalletId(), user);
+        validateSufficientBalance(wallet, category, request.getAmount(), user, null);
 
         Transaction tx = Transaction.builder()
                 .amount(request.getAmount())
@@ -73,6 +75,8 @@ public class TransactionService {
             wallet = getOrCreateDefaultWallet(user);
         }
 
+        validateSufficientBalance(wallet, category, request.getAmount(), user, tx.getId());
+
         tx.setAmount(request.getAmount());
         tx.setDate(date);
         tx.setDescription(request.getDescription());
@@ -80,6 +84,30 @@ public class TransactionService {
         tx.setWallet(wallet);
 
         return map(transactionRepo.save(tx));
+    }
+
+    private void validateSufficientBalance(
+            Wallet wallet,
+            Category category,
+            BigDecimal amount,
+            User user,
+            Long excludeTransactionId
+    ) {
+        if (category.getType() != CategoryType.EXPENSE) {
+            return;
+        }
+        List<Transaction> userTransactions = transactionRepo.findByUser(user);
+        BigDecimal availableBalance = WalletService.calculateWalletBalance(wallet, userTransactions, excludeTransactionId);
+        if (amount.compareTo(availableBalance) > 0) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Số dư ví \"%s\" không đủ để thực hiện giao dịch chi tiêu (Hiện có: %s, cần chi: %s)",
+                            wallet.getName(),
+                            availableBalance.stripTrailingZeros().toPlainString(),
+                            amount.stripTrailingZeros().toPlainString()
+                    )
+            );
+        }
     }
 
     public void delete(Long id, Principal principal) {
