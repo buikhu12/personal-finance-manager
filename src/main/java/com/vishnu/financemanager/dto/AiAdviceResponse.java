@@ -39,6 +39,9 @@ public class AiAdviceResponse {
     // Đánh giá tính khả thi của các mục tiêu tiết kiệm hiện tại
     private List<String> goalAssessments;
 
+    // Đánh giá tình hình thực hiện ngân sách (Budget) trong tháng
+    private List<String> budgetAssessments;
+
     // Nguồn phân tích: "SMART_FINANCIAL_ENGINE" (thuật toán tài chính) hoặc "GEMINI_AI"
     private String source;
 }

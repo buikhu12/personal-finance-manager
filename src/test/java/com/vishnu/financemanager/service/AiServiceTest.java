@@ -1,6 +1,7 @@
 package com.vishnu.financemanager.service;
 
 import com.vishnu.financemanager.dto.AiAdviceResponse;
+import com.vishnu.financemanager.dto.BudgetResponse;
 import com.vishnu.financemanager.dto.GoalResponse;
 import com.vishnu.financemanager.dto.MonthlyReportResponse;
 import com.vishnu.financemanager.model.User;
@@ -29,6 +30,9 @@ class AiServiceTest {
 
     @Mock
     private SavingsGoalService savingsGoalService;
+
+    @Mock
+    private BudgetService budgetService;
 
     @Mock
     private UserRepository userRepo;
@@ -124,5 +128,31 @@ class AiServiceTest {
         assertNotNull(response);
         assertEquals("WARNING", response.getFinancialHealthStatus());
         assertEquals(new BigDecimal("5.00"), response.getSavingsRate());
+    }
+
+    @Test
+    void getMonthlyAdvice_exceededBudget_includesBudgetAssessmentAndRecommendation() {
+        MonthlyReportResponse report = MonthlyReportResponse.builder()
+                .month(11)
+                .year(2026)
+                .totalIncome(Map.of("Salary", new BigDecimal("20000000")))
+                .totalExpenses(Map.of("Living", new BigDecimal("19000000")))
+                .netSavings(new BigDecimal("1000000"))
+                .build();
+
+        when(reportService.getMonthly(2026, 11, principal)).thenReturn(report);
+        when(savingsGoalService.getAll(principal)).thenReturn(List.of());
+        when(budgetService.getAll("2026-11", principal)).thenReturn(List.of(
+                new BudgetResponse(1L, 10L, "Living", "2026-11",
+                        new BigDecimal("15000000"), new BigDecimal("19000000"),
+                        new BigDecimal("-4000000"), new BigDecimal("126.6"), BudgetResponse.Status.EXCEEDED)
+        ));
+
+        AiAdviceResponse response = aiService.getMonthlyAdvice(2026, 11, principal);
+
+        assertNotNull(response);
+        assertFalse(response.getBudgetAssessments().isEmpty());
+        assertTrue(response.getBudgetAssessments().get(0).contains("Vượt ngân sách"));
+        assertTrue(response.getRecommendations().stream().anyMatch(r -> r.contains("vượt ngân sách")));
     }
 }

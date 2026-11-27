@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, PiggyBank, Calendar, AlertCircle } from 'lucide-react';
-import type { MonthlyReportResponse, YearlyReportResponse } from '../types';
+import { TrendingUp, TrendingDown, PiggyBank, Calendar, AlertCircle, PieChart } from 'lucide-react';
+import type { MonthlyReportResponse, YearlyReportResponse, BudgetResponse } from '../types';
 import { reportApi } from '../services/api';
 
 export const ReportsView: React.FC = () => {
@@ -53,6 +53,23 @@ export const ReportsView: React.FC = () => {
     : 0;
 
   const netSavings = activeReport ? Number(activeReport.netSavings) : 0;
+  const budgets = activeReport?.budgets ?? [];
+  const totalBudgetLimit = Number(activeReport?.totalBudgetLimit ?? 0);
+  const totalBudgetSpent = Number(activeReport?.totalBudgetSpent ?? 0);
+  const totalBudgetRemaining = Number(activeReport?.totalBudgetRemaining ?? 0);
+
+  const getBudgetStatusBadge = (status: BudgetResponse['status']) => {
+    switch (status) {
+      case 'EXCEEDED':
+        return { label: 'Vượt mức', className: 'badge-expense', barClass: 'bg-expense' };
+      case 'AT_LIMIT':
+        return { label: 'Đạt giới hạn', className: 'badge-warning', barClass: 'bg-warning' };
+      case 'NEAR_LIMIT':
+        return { label: 'Gần chạm trần', className: 'badge-warning', barClass: 'bg-warning' };
+      default:
+        return { label: 'An toàn', className: 'badge-income', barClass: 'bg-income' };
+    }
+  };
 
   return (
     <div className="view-container">
@@ -152,6 +169,21 @@ export const ReportsView: React.FC = () => {
                 {formatCurrency(netSavings)}
               </div>
             </div>
+
+            <div className="kpi-card rate">
+              <div className="kpi-header">
+                <span>Ngân Sách ({budgets.length})</span>
+                <div className="kpi-icon"><PieChart size={20} /></div>
+              </div>
+              <div className={`kpi-value ${totalBudgetRemaining < 0 ? 'text-danger' : ''}`}>
+                {budgets.length > 0 ? formatCurrency(totalBudgetRemaining) : 'Chưa đặt'}
+              </div>
+              {budgets.length > 0 && (
+                <span className="kpi-subtext">
+                  Đã chi {formatCurrency(totalBudgetSpent)} / {formatCurrency(totalBudgetLimit)}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Breakdown Tables: Income vs Expense */}
@@ -213,6 +245,56 @@ export const ReportsView: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Budget Breakdown Section */}
+          <div className="dashboard-card budget-report-card">
+            <div className="card-header">
+              <div>
+                <h3>Theo dõi Ngân sách (Budget)</h3>
+                <p className="card-subtitle">
+                  {budgets.length > 0
+                    ? `Tổng đã chi ${formatCurrency(totalBudgetSpent)} / hạn mức ${formatCurrency(totalBudgetLimit)}`
+                    : `Chưa có ngân sách nào được thiết lập trong ${mode === 'MONTHLY' ? `tháng ${selectedMonth}/${selectedYear}` : `năm ${selectedYear}`}.`}
+                </p>
+              </div>
+              <span className="badge-pill badge-income">Ngân sách</span>
+            </div>
+
+            {budgets.length === 0 ? (
+              <p className="text-muted padding-md">
+                Hãy tạo ngân sách ở tab <strong>Ngân sách</strong> để theo dõi tiến độ chi tiêu so với hạn mức tại đây.
+              </p>
+            ) : (
+              <div className="breakdown-list">
+                {budgets.map((b) => {
+                  const badge = getBudgetStatusBadge(b.status);
+                  const pctWidth = Math.min(100, Math.max(0, Number(b.usagePercentage)));
+                  return (
+                    <div key={b.id} className="breakdown-item">
+                      <div className="breakdown-item-header">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <strong>{b.categoryName}</strong>
+                          {mode === 'YEARLY' && (
+                            <span className="tx-wallet-tag">{b.month}</span>
+                          )}
+                          <span className={`badge-pill ${badge.className}`}>{badge.label}</span>
+                        </div>
+                        <span className={b.status === 'EXCEEDED' ? 'text-expense font-bold' : 'font-bold'}>
+                          {formatCurrency(Number(b.spentAmount))} / {formatCurrency(Number(b.limitAmount))} ({Number(b.usagePercentage).toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="progress-bar-container">
+                        <div
+                          className={`progress-bar-fill ${badge.barClass}`}
+                          style={{ width: `${pctWidth}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </>
       ) : null}

@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vishnu.financemanager.model.Category;
 import com.vishnu.financemanager.model.CategoryType;
 import com.vishnu.financemanager.model.User;
+import com.vishnu.financemanager.model.Wallet;
 import com.vishnu.financemanager.repository.CategoryRepository;
 import com.vishnu.financemanager.repository.UserRepository;
+import com.vishnu.financemanager.repository.WalletRepository;
+import com.vishnu.financemanager.service.WalletService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -13,6 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+
+import java.math.BigDecimal;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -34,6 +39,8 @@ class BudgetIntegrationTest {
     private UserRepository users;
     @Autowired
     private CategoryRepository categories;
+    @Autowired
+    private WalletRepository wallets;
 
     @Test
     void recalculatesBudgetFromCurrentTransactionsInTheSelectedMonth() throws Exception {
@@ -144,7 +151,13 @@ class BudgetIntegrationTest {
     }
 
     private User createUser(String username) {
-        return users.save(User.builder().username(username).password("unused")
+        User saved = users.save(User.builder().username(username).password("unused")
                 .fullName("Budget Test User").phoneNumber("0000000000").build());
+        wallets.save(Wallet.builder()
+                .name(WalletService.DEFAULT_WALLET_NAME)
+                .initialBalance(new BigDecimal("10000000"))
+                .user(saved)
+                .build());
+        return saved;
     }
 }

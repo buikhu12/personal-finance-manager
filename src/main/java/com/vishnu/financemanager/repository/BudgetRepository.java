@@ -11,6 +11,7 @@ import java.util.Optional;
 
 public interface BudgetRepository extends JpaRepository<Budget, Long> {
     List<Budget> findByUserAndMonthStartOrderByCategory_NameAsc(User user, LocalDate monthStart);
+    List<Budget> findByUserAndMonthStartBetweenOrderByMonthStartAscCategory_NameAsc(User user, LocalDate startDate, LocalDate endDate);
     Optional<Budget> findByIdAndUser(Long id, User user);
     Optional<Budget> findByUserAndCategoryAndMonthStart(User user, Category category, LocalDate monthStart);
     boolean existsByCategory(Category category);

@@ -8,6 +8,7 @@ import {
   Calendar,
   RefreshCw,
   Cpu,
+  PieChart,
 } from 'lucide-react';
 import type { AiAdviceResponse } from '../types';
 import { aiApi } from '../services/api';
@@ -187,6 +188,37 @@ export const AiAdvisorView: React.FC = () => {
                 </ul>
               )}
             </div>
+          </div>
+
+          {/* Budget Assessments */}
+          <div className="ai-card">
+            <div className="ai-card-title">
+              <PieChart size={20} className="text-warning" />
+              <h3>Đánh Giá Thực Hiện Ngân Sách (Budget)</h3>
+            </div>
+            {!advice.budgetAssessments || advice.budgetAssessments.length === 0 ? (
+              <p className="text-muted">Chưa có dữ liệu ngân sách cho tháng này.</p>
+            ) : (
+              <div className="goal-assessments-list">
+                {advice.budgetAssessments.map((assessment, idx) => {
+                  const isDanger = assessment.startsWith('Vượt') || assessment.startsWith('Chạm trần');
+                  const isWarn = assessment.startsWith('Gần chạm');
+                  return (
+                    <div
+                      key={idx}
+                      className={`goal-assessment-item ${isDanger ? 'budget-assess-danger' : isWarn ? 'budget-assess-warn' : ''}`}
+                    >
+                      {isDanger || isWarn ? (
+                        <AlertTriangle size={18} className={isDanger ? 'text-danger' : 'text-warning'} />
+                      ) : (
+                        <PieChart size={18} className="text-indigo-icon" />
+                      )}
+                      <span>{assessment}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Goal Assessments */}

@@ -3,6 +3,7 @@ package com.vishnu.financemanager.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vishnu.financemanager.dto.AiAdviceResponse;
+import com.vishnu.financemanager.dto.BudgetResponse;
 import com.vishnu.financemanager.dto.GoalResponse;
 import com.vishnu.financemanager.dto.MonthlyReportResponse;
 import com.vishnu.financemanager.model.User;
@@ -47,6 +48,7 @@ public class AiService {
 
     private final ReportService reportService;
     private final SavingsGoalService savingsGoalService;
+    private final BudgetService budgetService;
     private final UserRepository userRepo;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -77,6 +79,10 @@ public class AiService {
         // 3. Lấy danh sách các mục tiêu tiết kiệm hiện có của người dùng
         List<GoalResponse> goals = savingsGoalService.getAll(principal);
 
+        // 3b. Lấy danh sách ngân sách (Budget) của tháng đang phân tích
+        String monthKey = String.format("%04d-%02d", year, month);
+        List<BudgetResponse> budgets = budgetService.getAll(monthKey, principal);
+
         // 4. Tính toán tổng thu nhập và tổng chi tiêu từ dữ liệu báo cáo
         BigDecimal totalIncome = report.getTotalIncome().values().stream()
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -96,13 +102,13 @@ public class AiService {
 
         // 6. Chạy thuật toán phân tích chuyên gia tài chính (Rule-based Engine)
         AiAdviceResponse advice = buildExpertAnalysis(user, year, month, totalIncome, totalExpenses,
-                netSavings, savingsRate, report.getTotalExpenses(), goals);
+                netSavings, savingsRate, report.getTotalExpenses(), goals, budgets);
 
         // 7. Nếu người dùng có cấu hình Gemini API Key, thử gọi AI tạo sinh để làm phong phú thêm lời khuyên
         if (geminiApiKey != null && !geminiApiKey.trim().isEmpty()) {
             try {
                 String aiGeneratedSummary = callGeminiApi(user.getFullName(), year, month,
-                        totalIncome, totalExpenses, netSavings, savingsRate, report.getTotalExpenses(), goals);
+                        totalIncome, totalExpenses, netSavings, savingsRate, report.getTotalExpenses(), goals, budgets);
 
                 if (aiGeneratedSummary != null && !aiGeneratedSummary.trim().isEmpty()) {
                     advice.setSummary(aiGeneratedSummary);
@@ -123,13 +129,15 @@ public class AiService {
                                                  BigDecimal totalIncome, BigDecimal totalExpenses,
                                                  BigDecimal netSavings, BigDecimal savingsRate,
                                                  Map<String, BigDecimal> expensesByCategory,
-                                                 List<GoalResponse> goals) {
+                                                 List<GoalResponse> goals,
+                                                 List<BudgetResponse> budgets) {
 
         String healthStatus;
         String summary;
         List<String> insights = new ArrayList<>();
         List<String> recommendations = new ArrayList<>();
         List<String> goalAssessments = new ArrayList<>();
+        List<String> budgetAssessments = new ArrayList<>();
 
         // -------------------------------------------------------------
         // BƯỚC 1: ĐÁNH GIÁ SỨC KHỎE TÀI CHÍNH TỔNG THỂ
@@ -236,6 +244,66 @@ public class AiService {
             }
         }
 
+        // -------------------------------------------------------------
+        // BƯỚC 4: PHÂN TÍCH TÌNH HÌNH THỰC HIỆN NGÂN SÁCH (BUDGET)
+        // -------------------------------------------------------------
+        if (budgets == null || budgets.isEmpty()) {
+            budgetAssessments.add(String.format(
+                    "Bạn chưa thiết lập ngân sách (Budget) nào cho tháng %d/%d. Hãy đặt hạn mức cho các danh mục chi tiêu chính để kiểm soát dòng tiền tốt hơn.",
+                    month, year));
+        } else {
+            BigDecimal totalBudgetLimit = BigDecimal.ZERO;
+            BigDecimal totalBudgetSpent = BigDecimal.ZERO;
+            int exceededCount = 0;
+            int nearLimitCount = 0;
+
+            for (BudgetResponse budget : budgets) {
+                totalBudgetLimit = totalBudgetLimit.add(budget.limitAmount());
+                totalBudgetSpent = totalBudgetSpent.add(budget.spentAmount());
+
+                switch (budget.status()) {
+                    case EXCEEDED -> {
+                        exceededCount++;
+                        BigDecimal over = budget.remainingAmount().abs();
+                        budgetAssessments.add(String.format(
+                                "Vượt ngân sách '%s': Đã chi %s / hạn mức %s (%.1f%%, vượt %s).",
+                                budget.categoryName(), budget.spentAmount(), budget.limitAmount(),
+                                budget.usagePercentage(), over));
+                        recommendations.add(String.format(
+                                "Danh mục '%s' đã vượt ngân sách %s. Hãy tạm dừng các khoản chi chưa cấp bách thuộc danh mục này trong phần còn lại của tháng.",
+                                budget.categoryName(), over));
+                    }
+                    case AT_LIMIT -> {
+                        nearLimitCount++;
+                        budgetAssessments.add(String.format(
+                                "Chạm trần ngân sách '%s': Đã dùng hết 100%% hạn mức (%s / %s).",
+                                budget.categoryName(), budget.spentAmount(), budget.limitAmount()));
+                        recommendations.add(String.format(
+                                "Ngân sách '%s' đã chạm trần 100%%. Cần kiểm soát chặt để không bị vượt hạn mức.",
+                                budget.categoryName()));
+                    }
+                    case NEAR_LIMIT -> {
+                        nearLimitCount++;
+                        budgetAssessments.add(String.format(
+                                "Gần chạm hạn mức '%s': Đã chi %s / %s (%.1f%%), chỉ còn lại %s.",
+                                budget.categoryName(), budget.spentAmount(), budget.limitAmount(),
+                                budget.usagePercentage(), budget.remainingAmount()));
+                        recommendations.add(String.format(
+                                "Ngân sách '%s' đã dùng %.1f%%. Hãy giãn tần suất chi tiêu cho hạng mục này.",
+                                budget.categoryName(), budget.usagePercentage()));
+                    }
+                    case SAFE -> budgetAssessments.add(String.format(
+                            "Trong tầm kiểm soát '%s': Đã chi %s / %s (%.1f%%), còn lại %s.",
+                            budget.categoryName(), budget.spentAmount(), budget.limitAmount(),
+                            budget.usagePercentage(), budget.remainingAmount()));
+                }
+            }
+
+            insights.add(String.format(
+                    "Tổng quan ngân sách tháng: Đã sử dụng %s / %s tổng hạn mức (%d vượt mức, %d gần chạm trần).",
+                    totalBudgetSpent, totalBudgetLimit, exceededCount, nearLimitCount));
+        }
+
         return AiAdviceResponse.builder()
                 .month(month)
                 .year(year)
@@ -245,6 +313,7 @@ public class AiService {
                 .insights(insights)
                 .recommendations(recommendations)
                 .goalAssessments(goalAssessments)
+                .budgetAssessments(budgetAssessments)
                 .source("SMART_FINANCIAL_ENGINE")
                 .build();
     }
@@ -257,7 +326,8 @@ public class AiService {
                                  BigDecimal totalIncome, BigDecimal totalExpenses,
                                  BigDecimal netSavings, BigDecimal savingsRate,
                                  Map<String, BigDecimal> expensesByCategory,
-                                 List<GoalResponse> goals) {
+                                 List<GoalResponse> goals,
+                                 List<BudgetResponse> budgets) {
         try {
             String endpoint = String.format(
                     "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
@@ -273,6 +343,14 @@ public class AiService {
             promptBuilder.append(String.format("- Tỷ lệ tiết kiệm: %s%%\n", savingsRate));
             promptBuilder.append("- Chi tiêu theo danh mục: " + expensesByCategory.toString() + "\n");
             promptBuilder.append("- Số mục tiêu tiết kiệm đang theo dõi: " + goals.size() + "\n");
+            if (budgets != null && !budgets.isEmpty()) {
+                String budgetSummary = budgets.stream()
+                        .map(b -> String.format("%s (%s/%s - %s)", b.categoryName(), b.spentAmount(), b.limitAmount(), b.status()))
+                        .collect(Collectors.joining(", "));
+                promptBuilder.append("- Ngân sách (Budget) tháng: " + budgetSummary + "\n");
+            } else {
+                promptBuilder.append("- Ngân sách (Budget) tháng: Chưa thiết lập\n");
+            }
             promptBuilder.append("Yêu cầu: Hãy viết một đoạn tổng quan ngắn gọn (dưới 150 từ), súc tích, mang tính động viên và đưa ra định hướng quan trọng nhất bằng tiếng Việt.");
 
             Map<String, Object> requestBody = Map.of(

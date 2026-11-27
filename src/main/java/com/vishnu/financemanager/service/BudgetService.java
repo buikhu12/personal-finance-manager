@@ -105,16 +105,22 @@ public class BudgetService {
     }
 
     private BudgetResponse toResponse(Budget budget, Map<Long, BigDecimal> spending) {
+        BigDecimal spent = spending.getOrDefault(budget.getCategory().getId(), BigDecimal.ZERO);
+        return toBudgetResponse(budget, spent);
+    }
+
+    public static BudgetResponse toBudgetResponse(Budget budget, BigDecimal spent) {
         Category category = budget.getCategory();
-        BigDecimal spent = spending.getOrDefault(category.getId(), BigDecimal.ZERO);
         BigDecimal limit = budget.getLimitAmount();
-        BigDecimal percentage = spent.movePointRight(2).divide(limit, 1, RoundingMode.DOWN);
+        BigDecimal percentage = limit.compareTo(BigDecimal.ZERO) > 0
+                ? spent.movePointRight(2).divide(limit, 1, RoundingMode.DOWN)
+                : BigDecimal.ZERO;
         return new BudgetResponse(budget.getId(), category.getId(), category.getName(),
                 YearMonth.from(budget.getMonthStart()).toString(), limit, spent, limit.subtract(spent),
                 percentage, statusFor(spent, limit));
     }
 
-    private Status statusFor(BigDecimal spent, BigDecimal limit) {
+    public static Status statusFor(BigDecimal spent, BigDecimal limit) {
         int comparison = spent.compareTo(limit);
         if (comparison > 0) return Status.EXCEEDED;
         if (comparison == 0) return Status.AT_LIMIT;

@@ -2014,3 +2014,28 @@ body {
   color: var(--text-muted);
 }
 
+/* Budget in Reports & AI Advisor */
+.budget-report-card {
+  margin-top: 1.5rem;
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.bg-warning {
+  background: #f59e0b;
+}
+
+.budget-assess-danger {
+  border-left: 3px solid var(--danger);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.budget-assess-warn {
+  border-left: 3px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.06);
+}
+
+

@@ -1,8 +1,10 @@
 package com.vishnu.financemanager.service;
 
+import com.vishnu.financemanager.dto.BudgetResponse;
 import com.vishnu.financemanager.dto.MonthlyReportResponse;
 import com.vishnu.financemanager.dto.YearlyReportResponse;
 import com.vishnu.financemanager.model.*;
+import com.vishnu.financemanager.repository.BudgetRepository;
 import com.vishnu.financemanager.repository.TransactionRepository;
 import com.vishnu.financemanager.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,9 @@ class ReportServiceTest {
 
     @Mock
     private UserRepository userRepo;
+
+    @Mock
+    private BudgetRepository budgetRepo;
 
     private User user;
     private Principal principal;
@@ -98,5 +103,36 @@ class ReportServiceTest {
         assertEquals(new BigDecimal("35000.00"), report.getNetSavings());
         assertEquals(new BigDecimal("50000.00"), report.getTotalIncome().get("Salary"));
         assertEquals(new BigDecimal("15000.00"), report.getTotalExpenses().get("Rent"));
+    }
+
+    @Test
+    void getMonthly_includesBudgetBreakdownAndTotals() {
+        Category foodCat = Category.builder().id(10L).name("Food").type(CategoryType.EXPENSE).build();
+        Budget foodBudget = Budget.builder()
+                .id(1L)
+                .category(foodCat)
+                .monthStart(LocalDate.of(2026, 5, 1))
+                .limitAmount(new BigDecimal("2000.00"))
+                .user(user)
+                .build();
+        Transaction expenseTx = Transaction.builder()
+                .amount(new BigDecimal("1700.00"))
+                .category(foodCat)
+                .date(LocalDate.of(2026, 5, 15))
+                .user(user)
+                .build();
+
+        when(txRepo.findByUserAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of(expenseTx));
+        when(budgetRepo.findByUserAndMonthStartOrderByCategory_NameAsc(user, LocalDate.of(2026, 5, 1)))
+                .thenReturn(List.of(foodBudget));
+
+        MonthlyReportResponse report = reportService.getMonthly(2026, 5, principal);
+
+        assertEquals(1, report.getBudgets().size());
+        assertEquals(new BigDecimal("2000.00"), report.getTotalBudgetLimit());
+        assertEquals(new BigDecimal("1700.00"), report.getTotalBudgetSpent());
+        assertEquals(new BigDecimal("300.00"), report.getTotalBudgetRemaining());
+        assertEquals(BudgetResponse.Status.NEAR_LIMIT, report.getBudgets().get(0).status());
     }
 }

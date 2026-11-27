@@ -99,6 +99,10 @@ export interface MonthlyReportResponse {
   totalIncome: Record<string, number>;
   totalExpenses: Record<string, number>;
   netSavings: number;
+  budgets?: BudgetResponse[];
+  totalBudgetLimit?: number;
+  totalBudgetSpent?: number;
+  totalBudgetRemaining?: number;
 }
 
 export interface YearlyReportResponse {
@@ -106,6 +110,10 @@ export interface YearlyReportResponse {
   totalIncome: Record<string, number>;
   totalExpenses: Record<string, number>;
   netSavings: number;
+  budgets?: BudgetResponse[];
+  totalBudgetLimit?: number;
+  totalBudgetSpent?: number;
+  totalBudgetRemaining?: number;
 }
 
 export interface AiAdviceResponse {
@@ -117,5 +125,6 @@ export interface AiAdviceResponse {
   insights: string[];
   recommendations: string[];
   goalAssessments: string[];
+  budgetAssessments?: string[];
   source: string;
 }
